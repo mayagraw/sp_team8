@@ -2,18 +2,18 @@
 #include <stdlib.h>
 #include "db.h"
 
-client_db_node ** create_db(void)
+bool create_db(void)
 {
-    client_db_node **client_db = (client_db_node **)malloc(MAX_NUM_GROUPS*sizeof(client_db_node*));
+    client_db = (client_db_node **)malloc(MAX_NUM_GROUPS*sizeof(client_db_node*));
     if (client_db == NULL) {
 	printf("\nError in malloc");
-        return NULL;
+        return false;
     }
     for (int i=0; i<MAX_NUM_GROUPS; i++) {
 	client_db[i] = NULL;
     }
 
-    return client_db;
+    return true;
 }
 
 /*
@@ -26,7 +26,7 @@ client_db_node ** create_db(void)
  *   Returns TRUE on success.
  */
 
-bool register_client(client_db_node **client_db, unsigned long addr, int num_groups, int *groups)
+bool register_client(unsigned long addr, int num_groups, int *groups)
 {
     client_db_node *temp;
     for (int i=0; i<num_groups; i++) {
@@ -58,7 +58,7 @@ bool register_client(client_db_node **client_db, unsigned long addr, int num_gro
     return true;
 }
 
-bool delete_client(client_db_node **client_db, unsigned long client_addr)
+bool delete_client(unsigned long client_addr)
 {
     client_db_node *curr_node, *prev_node;
     bool deleted = false;
@@ -85,23 +85,30 @@ bool delete_client(client_db_node **client_db, unsigned long client_addr)
     return deleted;
 }
 
-void print(client_db_node **client_db, int group)
+void print(int group)
 {
     client_db_node *node;
     node = client_db[group];
-    printf("\nGROUP# %d:",group);
+    debug("\nGROUP# %d:",group);
     while (node != NULL) {
-	printf("\t%ld", node->addr);
+	debug("\t%ld", node->addr);
 	node = node->next;
     }
 
-    printf("\nDone printing!");
+    debug("\nDone printing!");
     return;
 }
 
+/*
+ * Driver funnction for DB
+ */
 int main()
 {
-    client_db_node ** client_db = create_db();
+    dbg_flag = DBG_FLAG;
+    if (!create_db()) {
+	printf("\nFailed to create client db...returning!");
+	return -1;
+    }
     unsigned long addr;
     int num_groups, *groups;
 
@@ -110,32 +117,32 @@ int main()
     groups = (int *)malloc(num_groups*sizeof(int));
     for (int i=0; i<num_groups; i++)	groups[i] = i;
     addr = inet_addr("1.1.1.1");
-    printf("\nAddr = %ld",addr);
-    if (!register_client(client_db, addr, num_groups, groups)) {
+    debug("\nAddr = %ld",addr);
+    if (!register_client(addr, num_groups, groups)) {
 	printf("Failed to add the client to the db");
     }
-    printf("\nClient added sucessfully");
+    debug("\nClient added sucessfully");
 
     //Add another client
     addr = inet_addr("1.1.1.2");
-    printf("\nAddr = %ld",addr);
-    if (!register_client(client_db, addr, num_groups, groups)) {
+    debug("\nAddr = %ld",addr);
+    if (!register_client(addr, num_groups, groups)) {
 	printf("Failed to add the client to the db");
     }
-    printf("\nClient added sucessfully");
+    debug("\nClient added sucessfully");
 
     free(groups);
 
     //print DB
-    for (int i=0; i<num_groups; i++)	print(client_db, i);
+    for (int i=0; i<num_groups; i++)	print(i);
 
     //Delete client
-    if ( !delete_client(client_db, inet_addr("1.1.1.3")) ) {
+    if ( !delete_client(inet_addr("1.1.1.3")) ) {
 	printf("\nNo client deleted");
     }
 
     //print DB
-    for (int i=0; i<num_groups; i++)    print(client_db, i);
+    for (int i=0; i<num_groups; i++)    print(i);
 
     printf("\n");
     return 0;

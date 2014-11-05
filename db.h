@@ -6,13 +6,18 @@
 #define MAX_NUM_GROUPS_PER_CLIENT 10
 #define MAX_NUM_CLIENTS 1000
 
+#define DBG_FLAG 0
+int dbg_flag;
+#define debug if(dbg_flag) printf
+
 typedef struct client_db_node_ {
     unsigned long addr;
     struct client_db_node_ *next;
 } client_db_node;
 
+client_db_node **client_db; //Client db global pointer
 
-client_db_node ** create_db(void);
-bool register_client(client_db_node **, unsigned long, int, int *);
-bool delete_client(client_db_node **, unsigned long);
-void print(client_db_node **, int);
+bool create_db(void);
+bool register_client(unsigned long, int, int *);
+bool delete_client(unsigned long);
+void print(int);
