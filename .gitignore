@@ -1,4 +1,6 @@
 # Object files
+client
+server
 *.o
 *.ko
 *.obj
@@ -27,3 +29,4 @@
 *.i*86
 *.x86_64
 *.hex
+*.sh
