@@ -24,7 +24,7 @@ int main(int argc , char *argv[])
     {
         printf("Could not create socket");
     }
-    //comment     
+    
     //Prepare the sockaddr_in structure
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = INADDR_ANY;
