@@ -52,6 +52,7 @@ bool register_client(unsigned long addr, int group)
 	(temp->next)->addr = addr;
 	(temp->next)->next = NULL;
     }
+    debug("Client added to DB");
 
     return true;
 }
@@ -85,12 +86,13 @@ bool delete_client(unsigned long client_addr)
 
 void print(int group)
 {
+    printf("%s called grp=%d",__func__,group);
     client_db_node *node;
     node = client_db[group];
-    debug("\nGROUP# %d:",group);
+    printf("\nGROUP# %d:",group);
     while (node != NULL) {
-	debug("\t%ld", node->addr);
-	node = node->next;
+        printf("\t%ld", node->addr);
+        node = node->next;
     }
 
     debug("\tEND");
@@ -100,6 +102,7 @@ void print(int group)
 /*
  * Driver funnction for DB
  */
+/*
 int main()
 {
     dbg_flag = DBG_FLAG;
@@ -145,3 +148,4 @@ int main()
     printf("\n");
     return 0;
 }
+*/

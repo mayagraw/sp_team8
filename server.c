@@ -1,6 +1,9 @@
 #include "common.h" 
+#include "db.h"
 #include<pthread.h> //for threading , link with lpthread
- 
+
+client_db_node **client_db;
+int dbg_flag;
 void *connection_handler(void *);
 void control_msg_recv(void *msg);
 
@@ -17,6 +20,13 @@ int main(int argc , char *argv[])
     struct sockaddr_in server , client;
     char *message;
     struct client_info info;
+
+    //Initializing the DB
+    dbg_flag = DBG_FLAG;
+    if (!create_db()) {
+	printf("\nFailed to create client db...returning!");
+	return -1;
+    }
      
     //Create socket
     socket_desc = socket(AF_INET , SOCK_STREAM , 0);
@@ -55,8 +65,7 @@ int main(int argc , char *argv[])
         pthread_t sniffer_thread;
         info.socket_id = new_socket;
         info.client = &client;
-        if( pthread_create( &sniffer_thread , NULL ,  connection_handler ,
-        (void *)&info) < 0)
+        if( pthread_create( &sniffer_thread , NULL ,  connection_handler , (void *)&info) < 0)
         {
             perror("could not create thread");
             return 1;
@@ -102,11 +111,13 @@ void *connection_handler(void *arg)
         memset(client_message,'\0',2000);
         if((read_size = recv(sock , client_message , nxt_len , 0)) > 0){
             printf("Msg from %s:%s\n",inet_ntoa(info->client->sin_addr),client_message);
+            register_client(info->client->sin_addr.s_addr,atoi(client_message));
             memset(client_message,'\0',2000);
         }
     }
 
     fflush(stdout);
+    print(3);
      
     return 0;
 } 

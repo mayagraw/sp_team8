@@ -6,7 +6,7 @@ void close_conn(int);
 int main (int argc , char *  argv[]){
     struct sockaddr_in server;
     int socket_desc;
-    char * msg = "Hey!!!! Hello there";
+    char * msg = "3";
     int a;
     if(argc!=2){
         printf("\nPlease enter the server address\n");
