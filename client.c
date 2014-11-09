@@ -1,4 +1,11 @@
 #include "common.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <stdbool.h>
 
 int send_msg(int ,char*);
 void close_conn(int);
@@ -35,16 +42,19 @@ int send_msg(int socket_desc,char* msg){
     char msg1[MAX_CTRL_MSG_LEN] = "";
     char buffer[MAX_CTRL_MSG_LEN] = "";
     if(!msg){return -1;}
-    sprintf(buffer,"%d",strlen(msg)); //convert the len into a string
+	printf("\n before conversion %s",msg);
+    sprintf(buffer,"%lu",strlen(msg)); //convert the len into a string
     make_ctrl_msg(buffer,msg1);
     if(write(socket_desc,msg1,strlen(msg1))== -1 ){
         printf("\n Send failed");
         return -1;
     }
-    if(write(socket_desc,msg,strlen(msg))== -1 ){
+    make_data_msg(msg,msg1);
+	printf("\n after conversion %s",msg1);
+    if(write(socket_desc,msg1,strlen(msg1))== -1 ){
         printf("\n Send failed");
         return -1;
-    }
+    } else { return 1;}
 }
 
 void close_conn(int socket_desc){

@@ -1,6 +1,9 @@
+#include "db.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "db.h"
+
+client_db_node **client_db;
+int dbg_flag;
 
 bool create_db(void)
 {

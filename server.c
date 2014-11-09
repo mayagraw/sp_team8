@@ -1,9 +1,14 @@
 #include "common.h" 
 #include "db.h"
-#include<pthread.h> //for threading , link with lpthread
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <stdbool.h>
+#include <pthread.h> //for threading , link with lpthread
 
-client_db_node **client_db;
-int dbg_flag;
 void *connection_handler(void *);
 void control_msg_recv(void *msg);
 
@@ -14,7 +19,7 @@ struct client_info {
     int socket_id;
 };
 
-int main(int argc , char *argv[])
+int main()
 {
     int socket_desc , new_socket , c;
     struct sockaddr_in server , client;
@@ -46,7 +51,6 @@ int main(int argc , char *argv[])
         puts("bind failed");
         return 1;
     }
-    puts("bind done");
      
     //Listen
     listen(socket_desc , 3);
@@ -59,8 +63,6 @@ int main(int argc , char *argv[])
         puts("Connection accepted");
          
         //Reply to the client
-        message = "Hello Client , I have received your connection. And now I will assign a handler for you\n";
-        //write(new_socket , message , strlen(message));
          
         pthread_t sniffer_thread;
         info.socket_id = new_socket;
@@ -93,7 +95,7 @@ void *connection_handler(void *arg)
     struct client_info * info = (struct client_info *)arg ;
     int sock = info->socket_id;
     int read_size , nxt_len;
-    char *message , client_message[2000];
+    char client_message[2000];
     char buffer[2001]="";
 
     //Receive a message from client
@@ -109,9 +111,14 @@ void *connection_handler(void *arg)
             break;
         }
         memset(client_message,'\0',2000);
-        if((read_size = recv(sock , client_message , nxt_len , 0)) > 0){
-            printf("Msg from %s:%s\n",inet_ntoa(info->client->sin_addr),client_message);
-            register_client(info->client->sin_addr.s_addr,atoi(client_message));
+        if((read_size = recv(sock , buffer , nxt_len , 0)) > 0){
+		printf("\n client msg = %s",buffer);
+		if(!verify_data_msg(client_message,buffer)){
+			printf("\nverify_data_msg failed");
+			break;
+		}
+            printf("Msg from %s:%s\n",inet_ntoa(info->client->sin_addr),buffer);
+            register_client(info->client->sin_addr.s_addr,atoi(buffer));
             memset(client_message,'\0',2000);
         }
     }
