@@ -1,7 +1,10 @@
 #define MAX_CTRL_MSG_LEN 15
 #define MAX_DATA_MSG_LEN 999998 // max len that can sent via the ctrl msg - 1. max of 6 digits
 
+extern int DATA_LEN;
+extern int CTRL_LEN;
 
+void validate_ip_str(char * );
 int my_atoi(const char *);
 int verify_ctrl_msg(char *,char *);
 int verify_data_msg(char *,char *);

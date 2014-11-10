@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 char CTRL_MAGIC_START_STR[] = "$$@@";
 char CTRL_MAGIC_END_STR[] = "##@@";
@@ -15,11 +16,33 @@ char DATA_MAGIC_END_STR[] = "##!!";
 int CTRL_LEN = 4; // length of CTRL_MAGIC_START_STR and CTRL_MAGIC_END_STR
 int DATA_LEN = 4; // length of DATA_MAGIC_START_STR and DATA_MAGIC_END_STR
 
+void validate_ip_str(char * str){
+    if(!str)return;
+    int len = strlen(str);
+    if(!len)return;
+    int indx1=0,indx2=0;
+    while(indx2<len){
+        if(isalnum(str[indx2]) || isblank(str[indx2])){
+            if(indx2>indx1){
+                str[indx1]=str[indx2];
+            }
+            indx1++;
+            indx2++;
+        } else {
+            indx2++;
+        }
+    }//end of while
+    str[indx1]='\0';
+}
+
+
+
+
 int make_data_msg(char* str,char* data_str){
     int len=strlen(str);
     if(!len) return -1;
     if(len > MAX_DATA_MSG_LEN) {
-	    printf("\n%s string len exceeds the capacity",__func__);
+	    //printf("\n%s string len exceeds the capacity",__func__);
 	    return -2;
     }
     memset(data_str,'0',MAX_DATA_MSG_LEN);
