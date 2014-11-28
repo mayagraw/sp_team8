@@ -1,4 +1,4 @@
-#include "db.h"
+#include "../include/db.h"
 #include <stdio.h>
 #include <stdlib.h>
 

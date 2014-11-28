@@ -1,6 +1,6 @@
 #ifndef MSGH_CHECK
 #define MSGH_CHECK
-
+#include <sys/types.h>
 enum {Q_db=0,
     Q_out,
     Q_main,

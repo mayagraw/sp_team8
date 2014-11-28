@@ -1,5 +1,5 @@
-#include "common.h" 
-#include "db.h"
+#include "../include/common.h" 
+#include "../include/db.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

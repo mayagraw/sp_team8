@@ -3,7 +3,7 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <errno.h>
-#include "msg.h"
+#include "../include/msg.h"
 
 msgbuf buf;
 #define PRI(A) printf("\n%s %s=%d",__func__,#A,(A))
@@ -93,9 +93,11 @@ int send_msg_to_log(void * data){
     buf.data = data;
     return enqueue_msg(qid[Q_log],&buf);
 }
+/*
 int main (){
     create_msgQ();
     map_id_key();
     delete_msgQ();
     return 0;
 }
+*/
