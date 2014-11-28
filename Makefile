@@ -16,7 +16,7 @@ $(EXEC) : $(OBJECTS) touch
 	rm -f $(EXEC)
 	$(CC) $(OBJECTS) -o $@ $(LDFLAGS)
 
-%.o : %.c db.h common.h
+%.o : src/%.c include/db.h include/common.h include/msg.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 .PHONY : clean
