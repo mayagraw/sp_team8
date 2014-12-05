@@ -1,7 +1,8 @@
 CC = gcc
 
-CFLAGS = -std=c99 -O3
+CFLAGS = -std=c99 -O3 -g
 LDFLAGS = -lm -lgomp
+LDLIBS = -lpthread -lev
 
 #SOURCES
 RM  = rm -f

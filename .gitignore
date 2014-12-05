@@ -31,3 +31,6 @@ server
 *.hex
 *.sh
 DB
+
+#ctag file
+tags

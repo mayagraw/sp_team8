@@ -1,74 +1,103 @@
-#include "../include/common.h"
-#include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
-#include <unistd.h>
-#include <stdbool.h>
-#include <ctype.h>
+#include "../include/common.h"
 
-char CTRL_MAGIC_START_STR[] = "$$@@";
-char CTRL_MAGIC_END_STR[] = "##@@";
-char DATA_MAGIC_START_STR[] = "!!@@";
-char DATA_MAGIC_END_STR[] = "##!!";
+const char MAGIC_START_STR[] = "$$@@";
+const char MAGIC_END_STR[] = "##@@";
 
-int CTRL_LEN = 4; // length of CTRL_MAGIC_START_STR and CTRL_MAGIC_END_STR
-int DATA_LEN = 4; // length of DATA_MAGIC_START_STR and DATA_MAGIC_END_STR
+const int MAGIC_LEN = 4; // length of MAGIC_START_STR and MAGIC_END_STR
+const int MAX_CTRL_MSG_LEN = sizeof(mheader) + 2*MAGIC_LEN;
 
-void validate_ip_str(char * str){
-    if(!str)return;
-    int len = strlen(str);
-    if(!len)return;
-    int indx1=0,indx2=0;
-    while(indx2<len){
-        if(isalnum(str[indx2]) || isblank(str[indx2])){
-            if(indx2>indx1){
-                str[indx1]=str[indx2];
-            }
-            indx1++;
-            indx2++;
-        } else {
-            indx2++;
+/*
+   Below is struct of mheader
+   struct{
+   uint16_t ctype;    // 4 bytes
+   uint16_t client_id;// 4 bytes 
+   uint32_t data;     // 8 bytes
+   } mheader;
+*/
+
+
+static ulong int_from_8char(uchar *ip){
+    ulong op=0;
+    for(int i=0;i<8;i++){
+        op+=ip[i];
+        if(i<7)op<<=8;
+    }
+    return op;
+}
+
+static void int_to_8char(ulong ip,uchar *op){
+    for(int i=7;i>=0;i--){
+        op[i]=ip;
+        ip>>=8;
+    }
+}
+static uint int_from_4char(uchar *ip){
+    uint op=0;
+    for(int i=0;i<4;i++){
+        op+=ip[i];
+        if(i<3)op<<=8;
+    }
+    return op;
+}
+
+static void int_to_4char(uint ip,uchar *op){
+    for(int i=3;i>=0;i--){
+        op[i]=ip;
+        ip>>=8;
+    }
+}
+
+void deserialize_mheader(uchar * ip,mheader *op){
+    ulong tmp;
+    op->ctype = ntohl(int_from_4char(ip));
+    op->client_id = ntohl(int_from_4char(&ip[4]));
+
+    tmp = int_from_8char(&ip[8]);
+    //ntohl works on 4bytes, long is 8 bytes. Hence the below code.
+    op->data = (ulong)ntohl((uint)tmp) + (((ulong)ntohl((uint)(tmp>>32)))<<32) ;
+}
+
+void serialize_mheader(mheader *ip,uchar *op){
+    if(!op){return;}
+    ulong tmp;
+    int_to_4char(htonl(ip->ctype),op);
+    int_to_4char(htonl(ip->client_id),&op[4]);
+    //htonl works on 4bytes, long is 8 bytes. Hence the below code.
+    tmp = (ulong)htonl((uint)ip->data) + (((ulong)htonl((uint)((ip->data)>>32)))<<32) ;
+    int_to_8char(tmp,&op[8]);
+}    
+
+int xtract_mheader(uchar *input,mheader * op){
+    const int len=MAX_CTRL_MSG_LEN;
+    int flag=0;
+    // we can use sizeof mheader here cos the struct alignment matches the word size of the machine, 
+    // since we use only int and long,else we would have to calculate the size
+    uchar data[sizeof(mheader)]; 
+    if(len<=(MAGIC_LEN + MAGIC_LEN)){
+        return flag;
+    }
+    if(strncmp((char *)input,MAGIC_START_STR,MAGIC_LEN)==0){
+        if(strncmp((char *)(&input[len-MAGIC_LEN]),MAGIC_END_STR,MAGIC_LEN)==0){
+            memcpy(data,&input[MAGIC_LEN],sizeof(mheader));
+            deserialize_mheader(data,op);
+            flag=1;
         }
-    }//end of while
-    str[indx1]='\0';
-}
-
-
-
-
-int make_data_msg(char* str,char* data_str){
-    int len=strlen(str);
-    if(!len) return -1;
-    if(len > MAX_DATA_MSG_LEN) {
-	    //printf("\n%s string len exceeds the capacity",__func__);
-	    return -2;
     }
-    memset(data_str,'0',MAX_DATA_MSG_LEN);
-    strcpy(data_str,DATA_MAGIC_START_STR);
-    strcat(data_str,str);
-    strcat(data_str,DATA_MAGIC_END_STR);
-    return 0;
+    return flag;
 }
 
-int make_ctrl_msg(char* str,char* ctrl_len){
-    int len=strlen(str);
-    if(!len) return -1;
-    char temp_str[MAX_CTRL_MSG_LEN + 1]="";
-    memset(ctrl_len,'0',MAX_CTRL_MSG_LEN);
-    strcpy(ctrl_len,CTRL_MAGIC_START_STR);
-    if((len + CTRL_LEN + CTRL_LEN) < MAX_CTRL_MSG_LEN){
-        append0(str,temp_str,(MAX_CTRL_MSG_LEN - CTRL_LEN - CTRL_LEN-len-1));
-        strcat(ctrl_len,temp_str);
-    } else {
-        strncat(ctrl_len,str,MAX_CTRL_MSG_LEN - CTRL_LEN - CTRL_LEN);
-    }
-    strcat(ctrl_len,CTRL_MAGIC_END_STR);
-    return 0;
-}
+void make_mheader_str(mheader *ip,uchar *op){
+    if(!op)return;
 
-        
+    memcpy(op,MAGIC_START_STR,MAGIC_LEN);
+    serialize_mheader(ip,&op[4]);
+    // we can use sizeof mheader here cos the struct alignment matches the word size of the machine, 
+    // since we use only int and long,else we would have to calculate the size
+    memcpy(&op[sizeof(mheader)+MAGIC_LEN],MAGIC_START_STR,MAGIC_LEN);
+}
+/*        
 void append0(char *str,char* dst,int t){
     memset(dst,'0',MAX_CTRL_MSG_LEN);
     memcpy(&dst[t],str,(MAX_CTRL_MSG_LEN-t));
@@ -89,34 +118,63 @@ int my_atoi(const char * str){
     return value;
 }
 
-int verify_ctrl_msg(char *input,char *op){
+int verify_data_msg(char *input,char *op){
     int len=strlen(input);
     int flag=0;
     if(!len) return flag;
-    if(len<=(CTRL_LEN + CTRL_LEN)){
+    if(len<=(MAGIC_LEN + MAGIC_LEN)){
         return flag;
     }
-    if(strncmp(input,CTRL_MAGIC_START_STR,CTRL_LEN)==0){
-        if(strncmp(&input[len-CTRL_LEN],CTRL_MAGIC_END_STR,CTRL_LEN)==0){
-            strncpy(op,&input[CTRL_LEN],len-CTRL_LEN-CTRL_LEN);
+    if(strncmp(input,MAGIC_START_STR,MAGIC_LEN)==0){
+        if(strncmp(&input[len-MAGIC_LEN],MAGIC_END_STR,MAGIC_LEN)==0){
+            strncpy(op,&input[MAGIC_LEN],len-MAGIC_LEN-MAGIC_LEN);
             flag=1;
         }
     }
     return flag;
 }
 
-int verify_data_msg(char *input,char *op){
-    int len=strlen(input);
-    int flag=0;
-    if(!len) return flag;
-    if(len<=(DATA_LEN + DATA_LEN)){
-        return flag;
-    }
-    if(strncmp(input,DATA_MAGIC_START_STR,DATA_LEN)==0){
-        if(strncmp(&input[len-DATA_LEN],DATA_MAGIC_END_STR,DATA_LEN)==0){
-            strncpy(op,&input[DATA_LEN],len-DATA_LEN-DATA_LEN);
-            flag=1;
+void validate_snd_str(char * str){
+    if(!str)return;
+    int len = strlen(str);
+    if(!len)return;
+    int indx1=0,indx2=0;
+    while(indx2<len){
+        if(isalnum(str[indx2]) || isblank(str[indx2])){
+            if(indx2>indx1){
+                str[indx1]=str[indx2];
+            }
+            indx1++;
+            indx2++;
+        } else {
+            indx2++;
         }
-    }
-    return flag;
+    }//end of while
+    str[indx1]='\0';
 }
+int make_data_msg(char* str,char* data_str){
+    int len=strlen(str);
+    if(!len) return -1;
+    if(len > MAX_DATA_MSG_LEN) {
+	    //printf("\n%s string len exceeds the capacity",__func__);
+	    return -2;
+    }
+    memset(data_str,'0',MAX_DATA_MSG_LEN);
+    strcpy(data_str,MAGIC_START_STR);
+    strcat(data_str,str);
+    strcat(data_str,MAGIC_END_STR);
+    return 0;
+}
+
+int make_ctrl_msg(char *op,mheader * ip){
+    const int len=sizeof(mheader);
+    if(!len) return -1;
+    char temp_str[MAX_CTRL_MSG_LEN + 1]="";
+    //memcpy too would have worked here
+    sprintf("");
+    memcpy(op,MAGIC_START_STR,MAGIC_LEN);
+    memcpy(&op[MAGIC_LEN],ip,len);
+    memcpy(&op[len+MAGIC_LEN],MAGIC_END_STR,MAGIC_LEN);
+    return 0;
+}
+*/

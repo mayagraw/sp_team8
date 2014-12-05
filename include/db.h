@@ -1,6 +1,6 @@
+#ifndef DBH_CHECK 
+#define DBH_CHECK
 
-#ifndef DBG 
-#define DBG 
 #include <arpa/inet.h>
 #include <stdbool.h>
 
@@ -24,4 +24,6 @@ extern bool create_db(void);
 extern bool register_client(unsigned long, int);
 bool delete_client(unsigned long);
 void print(int);
+
+
 #endif
